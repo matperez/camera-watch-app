@@ -1,0 +1,86 @@
+name: Build and Publish
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore CameraWatch/CameraWatch.csproj
+
+    - name: Build
+      run: dotnet build CameraWatch/CameraWatch.csproj --configuration Release --no-restore
+
+    - name: Publish
+      run: dotnet publish CameraWatch/CameraWatch.csproj --configuration Release --runtime win-x64 --self-contained false --output ./publish/CameraWatch-Windows-x64
+
+    - name: Create archive
+      shell: pwsh
+      run: |
+        Compress-Archive -Path ./publish/CameraWatch-Windows-x64/* -DestinationPath ./CameraWatch-Windows-x64.zip -Force
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: CameraWatch-Windows-x64
+        path: CameraWatch-Windows-x64.zip
+        retention-days: 30
+
+  build-macos:
+    strategy:
+      matrix:
+        rid: [osx-x64, osx-arm64]
+        include:
+          - rid: osx-x64
+            artifact-name: CameraWatch-macOS-x64
+          - rid: osx-arm64
+            artifact-name: CameraWatch-macOS-arm64
+
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore CameraWatch/CameraWatch.csproj
+
+    - name: Build
+      run: dotnet build CameraWatch/CameraWatch.csproj --configuration Release --no-restore
+
+    - name: Publish
+      run: dotnet publish CameraWatch/CameraWatch.csproj --configuration Release --runtime ${{ matrix.rid }} --self-contained false --output ./publish/${{ matrix.artifact-name }}
+
+    - name: Create archive
+      run: |
+        cd publish/${{ matrix.artifact-name }}
+        tar -czf ../../${{ matrix.artifact-name }}.tar.gz *
+        cd ../..
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact-name }}
+        path: ${{ matrix.artifact-name }}.tar.gz
+        retention-days: 30
+
