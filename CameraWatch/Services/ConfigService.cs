@@ -1,87 +1,88 @@
+using System;
+using System.IO;
 using System.Text.Json;
 using CameraWatch.Models;
 
-namespace CameraWatch.Services
+namespace CameraWatch.Services;
+
+public class ConfigService
 {
-    public class ConfigService
+    private const string ConfigFileName = "appsettings.json";
+    private readonly string _configPath;
+
+    public ConfigService()
     {
-        private const string ConfigFileName = "appsettings.json";
-        private readonly string _configPath;
+        var appDirectory = AppDomain.CurrentDomain.BaseDirectory;
+        _configPath = Path.Combine(appDirectory, ConfigFileName);
+    }
 
-        public ConfigService()
+    public AppConfig LoadConfig()
+    {
+        if (!File.Exists(_configPath))
         {
-            var appDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            _configPath = Path.Combine(appDirectory, ConfigFileName);
+            // Создаем конфигурацию по умолчанию
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var examplesPath = Path.Combine(baseDir, "..", "..", "..", ".examples");
+            var defaultConfig = new AppConfig
+            {
+                LogFile1Path = Path.GetFullPath(Path.Combine(examplesPath, "camealogSOCK1.log")),
+                LogFile2Path = Path.GetFullPath(Path.Combine(examplesPath, "camealogSOCK2.log")),
+                DisplayDurationSeconds = 10,
+                DisplayAreaWidth = 576,
+                DisplayAreaHeight = 192
+            };
+            SaveConfig(defaultConfig);
+            return defaultConfig;
         }
 
-        public AppConfig LoadConfig()
+        try
         {
-            if (!File.Exists(_configPath))
+            var json = File.ReadAllText(_configPath);
+            var config = JsonSerializer.Deserialize<AppConfig>(json, new JsonSerializerOptions
             {
-                // Создаем конфигурацию по умолчанию
-                var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                var examplesPath = Path.Combine(baseDir, "..", "..", "..", "examples");
-                var defaultConfig = new AppConfig
-                {
-                    LogFile1Path = Path.GetFullPath(Path.Combine(examplesPath, "camealogSOCK1.log")),
-                    LogFile2Path = Path.GetFullPath(Path.Combine(examplesPath, "camealogSOCK2.log")),
-                    DisplayDurationSeconds = 10,
-                    DisplayAreaWidth = 576,
-                    DisplayAreaHeight = 192
-                };
-                SaveConfig(defaultConfig);
-                return defaultConfig;
-            }
+                PropertyNameCaseInsensitive = true,
+                ReadCommentHandling = JsonCommentHandling.Skip
+            });
 
-            try
+            if (config != null)
             {
-                var json = File.ReadAllText(_configPath);
-                var config = JsonSerializer.Deserialize<AppConfig>(json, new JsonSerializerOptions
+                // Преобразуем относительные пути в абсолютные
+                var configDir = Path.GetDirectoryName(_configPath) ?? AppDomain.CurrentDomain.BaseDirectory;
+                if (!Path.IsPathRooted(config.LogFile1Path))
                 {
-                    PropertyNameCaseInsensitive = true,
-                    ReadCommentHandling = JsonCommentHandling.Skip
-                });
-
-                if (config != null)
-                {
-                    // Преобразуем относительные пути в абсолютные
-                    var configDir = Path.GetDirectoryName(_configPath) ?? AppDomain.CurrentDomain.BaseDirectory;
-                    if (!Path.IsPathRooted(config.LogFile1Path))
-                    {
-                        config.LogFile1Path = Path.GetFullPath(Path.Combine(configDir, config.LogFile1Path));
-                    }
-                    if (!Path.IsPathRooted(config.LogFile2Path))
-                    {
-                        config.LogFile2Path = Path.GetFullPath(Path.Combine(configDir, config.LogFile2Path));
-                    }
+                    config.LogFile1Path = Path.GetFullPath(Path.Combine(configDir, config.LogFile1Path));
                 }
-
-                return config ?? new AppConfig();
-            }
-            catch (Exception ex)
-            {
-                // В случае ошибки возвращаем конфигурацию по умолчанию
-                System.Diagnostics.Debug.WriteLine($"Ошибка загрузки конфигурации: {ex.Message}");
-                return new AppConfig();
-            }
-        }
-
-        public void SaveConfig(AppConfig config)
-        {
-            try
-            {
-                var options = new JsonSerializerOptions
+                if (!Path.IsPathRooted(config.LogFile2Path))
                 {
-                    WriteIndented = true,
-                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-                };
-                var json = JsonSerializer.Serialize(config, options);
-                File.WriteAllText(_configPath, json);
+                    config.LogFile2Path = Path.GetFullPath(Path.Combine(configDir, config.LogFile2Path));
+                }
             }
-            catch (Exception ex)
+
+            return config ?? new AppConfig();
+        }
+        catch (Exception ex)
+        {
+            // В случае ошибки возвращаем конфигурацию по умолчанию
+            System.Diagnostics.Debug.WriteLine($"Ошибка загрузки конфигурации: {ex.Message}");
+            return new AppConfig();
+        }
+    }
+
+    public void SaveConfig(AppConfig config)
+    {
+        try
+        {
+            var options = new JsonSerializerOptions
             {
-                System.Diagnostics.Debug.WriteLine($"Ошибка сохранения конфигурации: {ex.Message}");
-            }
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
+            var json = JsonSerializer.Serialize(config, options);
+            File.WriteAllText(_configPath, json);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Ошибка сохранения конфигурации: {ex.Message}");
         }
     }
 }

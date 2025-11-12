@@ -1,0 +1,66 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:CameraWatch.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="576" d:DesignHeight="192"
+        x:Class="CameraWatch.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Camera Watch Display" 
+        SystemDecorations="Full"
+        TransparencyLevelHint="None"
+        Background="#FF000000"
+        ExtendClientAreaToDecorationsHint="False"
+        CanResize="True"
+        MinWidth="576" MaxWidth="576"
+        MinHeight="192" MaxHeight="192"
+        Topmost="False"
+        ShowInTaskbar="True"
+        Width="576" Height="192"
+        WindowStartupLocation="Manual"
+        Position="0,0">
+    <Grid Background="#FF000000">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Левая половина (Полоса 1) -->
+        <Border Grid.Column="0" 
+                Background="#CC0000" 
+                BorderBrush="#FFFFFF" 
+                BorderThickness="3"
+                VerticalAlignment="Stretch"
+                HorizontalAlignment="Stretch">
+            <TextBlock Text="{Binding Lane1Text}"
+                       Foreground="White"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       TextAlignment="Center"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       Margin="10"
+                       Opacity="1"/>
+        </Border>
+
+        <!-- Правая половина (Полоса 2) -->
+        <Border Grid.Column="1" 
+                Background="#CC0000" 
+                BorderBrush="#FFFFFF" 
+                BorderThickness="3"
+                VerticalAlignment="Stretch"
+                HorizontalAlignment="Stretch">
+            <TextBlock Text="{Binding Lane2Text}"
+                       Foreground="White"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       TextAlignment="Center"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       Margin="10"
+                       Opacity="1"/>
+        </Border>
+    </Grid>
+</Window>

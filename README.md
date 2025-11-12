@@ -14,14 +14,24 @@
 - Разделение экрана на две половины (для двух полос движения)
 - Настраиваемая длительность показа предупреждений
 - Конфигурация через JSON-файл
+- Кросс-платформенность (Windows, macOS, Linux)
 
 ## Требования
 
-- .NET 8.0 SDK или выше
-- Windows (основная целевая платформа)
-- macOS/Linux (для разработки, через WPF может не работать, потребуется Avalonia)
+- .NET 9.0 SDK или выше
+- Windows, macOS или Linux
 
-## Установка
+## Установка и сборка
+
+### Предварительные требования
+
+1. Установите .NET 9.0 SDK с [официального сайта](https://dotnet.microsoft.com/download)
+2. Установите шаблоны Avalonia (опционально, для создания новых проектов):
+```bash
+dotnet new install Avalonia.Templates
+```
+
+### Сборка проекта
 
 1. Клонируйте репозиторий:
 ```bash
@@ -36,13 +46,38 @@ dotnet restore
 
 3. Соберите проект:
 ```bash
-dotnet build
+dotnet build --project CameraWatch/CameraWatch.csproj
 ```
 
 4. Запустите приложение:
 ```bash
 dotnet run --project CameraWatch/CameraWatch.csproj
 ```
+
+### Сборка релизной версии
+
+```bash
+dotnet build -c Release --project CameraWatch/CameraWatch.csproj
+```
+
+### Создание исполняемого файла
+
+#### Windows
+```bash
+dotnet publish -c Release -r win-x64 --self-contained -o publish/win-x64
+```
+
+#### macOS
+```bash
+dotnet publish -c Release -r osx-x64 --self-contained -o publish/osx-x64
+```
+
+#### Linux
+```bash
+dotnet publish -c Release -r linux-x64 --self-contained -o publish/linux-x64
+```
+
+Исполняемый файл будет находиться в папке `publish/<platform>/CameraWatch`.
 
 ## Настройка
 
@@ -60,9 +95,9 @@ dotnet run --project CameraWatch/CameraWatch.csproj
 
 ```json
 {
-  "LogFile1Path": "C:\\Logs\\camealogSOCK1.log",
-  "LogFile2Path": "C:\\Logs\\camealogSOCK2.log",
-  "DisplayDurationSeconds": 15,
+  "LogFile1Path": ".examples/camealogSOCK1.log",
+  "LogFile2Path": ".examples/camealogSOCK2.log",
+  "DisplayDurationSeconds": 10,
   "DisplayAreaWidth": 576,
   "DisplayAreaHeight": 192
 }
@@ -87,47 +122,61 @@ DD/MM/YYYY-HH:mm:ss --- SOCK1---overload: True, overloadAxels: False, number: А
 
 1. Убедитесь, что пути к лог-файлам в `appsettings.json` указаны правильно
 2. Запустите приложение
-3. Приложение создаст прозрачное окно в верхнем левом углу экрана
+3. Приложение создаст окно в верхнем левом углу экрана (размер 576x192 пикселей)
 4. При обнаружении нарушения в лог-файле на соответствующей половине экрана появится предупреждение:
    - "Нарушение!"
    - Гос номер транспортного средства
-   - Вид нарушения
+   - Вид нарушения (превышение допустимой массы / превышение допустимых габаритов)
+5. Предупреждение автоматически исчезнет через заданное в конфигурации время и вернется к статичному тексту
 
 ## Структура проекта
 
 ```
 camera-watch/
 ├── CameraWatch/
-│   ├── Models/          # Модели данных
-│   ├── Services/        # Сервисы (парсинг, мониторинг файлов, конфигурация)
-│   ├── ViewModels/      # ViewModels для MVVM
-│   ├── Converters/      # Конвертеры для XAML
-│   ├── MainWindow.xaml  # Главное окно
-│   └── appsettings.json # Конфигурация
-├── examples/            # Примеры лог-файлов
+│   ├── Models/              # Модели данных (AppConfig, LogEntry, Violation)
+│   ├── Services/            # Сервисы (ConfigService, LogParserService, FileWatcherService)
+│   ├── ViewModels/          # ViewModels для MVVM (MainWindowViewModel, ViewModelBase)
+│   ├── Views/               # Представления (MainWindow.axaml)
+│   ├── App.axaml            # Определение приложения
+│   ├── Program.cs           # Точка входа
+│   ├── ViewLocator.cs       # Локатор представлений
+│   ├── CameraWatch.csproj   # Файл проекта
+│   └── appsettings.json     # Конфигурация
+├── .examples/               # Примеры лог-файлов (в .gitignore)
+├── CameraWatch.sln          # Solution файл
 └── README.md
 ```
 
 ## Разработка
 
-### Сборка релизной версии
+### Архитектура
+
+Приложение использует паттерн MVVM (Model-View-ViewModel) с использованием:
+- **Avalonia UI** - кросс-платформенный UI фреймворк
+- **CommunityToolkit.Mvvm** - для реализации ViewModel с атрибутами
+- **System.Text.Json** - для работы с конфигурацией
+- **FileSystemWatcher** - для мониторинга файлов
+
+### Запуск в режиме разработки
 
 ```bash
-dotnet build -c Release
+dotnet run --project CameraWatch/CameraWatch.csproj
 ```
 
-### Создание исполняемого файла
+### Очистка проекта
 
 ```bash
-dotnet publish -c Release -r win-x64 --self-contained
+dotnet clean --project CameraWatch/CameraWatch.csproj
 ```
 
 ## Технологии
 
-- .NET 8.0
-- WPF (Windows Presentation Foundation)
-- System.Text.Json для работы с конфигурацией
-- FileSystemWatcher для мониторинга файлов
+- .NET 9.0
+- Avalonia UI 11.3.8 (кросс-платформенный UI фреймворк)
+- CommunityToolkit.Mvvm 8.2.1 (MVVM паттерн)
+- System.Text.Json 9.0.0 (работа с конфигурацией)
+- FileSystemWatcher (мониторинг файлов)
 
 ## Лицензия
 
@@ -136,4 +185,3 @@ dotnet publish -c Release -r win-x64 --self-contained
 ## Автор
 
 [Укажите автора]
-

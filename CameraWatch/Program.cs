@@ -1,13 +1,17 @@
-using System.Windows;
+using System;
+using Avalonia;
 
-namespace CameraWatch
+namespace CameraWatch;
+
+internal class Program
 {
-    public partial class App : Application
-    {
-        protected override void OnStartup(StartupEventArgs e)
-        {
-            base.OnStartup(e);
-        }
-    }
-}
+    [STAThread]
+    public static void Main(string[] args) => BuildAvaloniaApp()
+        .StartWithClassicDesktopLifetime(args);
 
+    public static AppBuilder BuildAvaloniaApp()
+        => AppBuilder.Configure<App>()
+            .UsePlatformDetect()
+            .WithInterFont()
+            .LogToTrace();
+}
