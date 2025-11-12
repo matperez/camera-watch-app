@@ -1,0 +1,46 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
+*.cache
+*.log
+
+## Visual Studio
+.vs/
+*.userprefs
+*.csproj.user
+
+## Rider
+.idea/
+*.sln.iml
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+
+## NuGet
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## macOS
+.DS_Store
+
+## App settings (может содержать чувствительные данные)
+appsettings.Development.json
+appsettings.Production.json
+
+.examples
