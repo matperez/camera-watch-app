@@ -63,10 +63,13 @@ jobs:
         dotnet-version: '9.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore CameraWatch/CameraWatch.csproj
+      run: dotnet restore
 
     - name: Build
-      run: dotnet build CameraWatch/CameraWatch.csproj --configuration Release --no-restore
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Run tests
+      run: dotnet test --configuration Release --no-build --verbosity normal
 
     - name: Publish
       run: dotnet publish CameraWatch/CameraWatch.csproj --configuration Release --runtime ${{ matrix.rid }} --self-contained false --output ./publish/${{ matrix.artifact-name }}
