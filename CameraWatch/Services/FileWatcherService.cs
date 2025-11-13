@@ -5,7 +5,7 @@ using CameraWatch.Models;
 
 namespace CameraWatch.Services;
 
-public class FileWatcherService : IDisposable
+public class FileWatcherService : IViolationEventSource
 {
     private readonly string _filePath1;
     private readonly string _filePath2;

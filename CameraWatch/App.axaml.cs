@@ -32,20 +32,42 @@ public partial class App : Application
             
             // Создаем сервисы
             var parser = new LogParserService();
-            var fileWatcher = new FileWatcherService(config.LogFile1Path, config.LogFile2Path, parser);
             
-            // Создаем ViewModel
-            var viewModel = new MainWindowViewModel(fileWatcher, parser, config.DisplayDurationSeconds);
+            // Выбираем источник событий в зависимости от конфигурации
+            IViolationEventSource eventSource = config.UseFakeEvents
+                ? new FakeEventGeneratorService()
+                : new FileWatcherService(config.LogFile1Path, config.LogFile2Path, parser);
             
-            // Запускаем мониторинг файлов
-            fileWatcher.Start();
+            // Создаем ViewModel (подписка на события происходит в конструкторе)
+            var viewModel = new MainWindowViewModel(eventSource, parser, config.DisplayDurationSeconds);
+            
+            System.Console.WriteLine($"Создан ViewModel. Подписка на события выполнена. UseFakeEvents: {config.UseFakeEvents}");
+            
+            // Запускаем мониторинг источника событий
+            System.Console.WriteLine($"Запуск источника событий. Тип: {eventSource.GetType().Name}, UseFakeEvents: {config.UseFakeEvents}");
+            eventSource.Start();
+            System.Console.WriteLine("Источник событий запущен");
+            
+            // Для отладки: проверяем, что генератор действительно запустился
+            if (eventSource is FakeEventGeneratorService fakeService)
+            {
+                System.Console.WriteLine("FakeEventGeneratorService обнаружен и запущен");
+            }
             
             // Создаем окно
             desktop.MainWindow = new MainWindow
             {
                 DataContext = viewModel,
-                Position = new Avalonia.PixelPoint(0, 0)
+                Position = new Avalonia.PixelPoint(100, 100) // Смещаем для лучшей видимости
             };
+            
+            System.Console.WriteLine($"MainWindow created. UseFakeEvents: {config.UseFakeEvents}");
+            
+            // Убеждаемся, что окно показывается
+            desktop.MainWindow.Show();
+            desktop.MainWindow.Activate();
+            
+            System.Console.WriteLine($"MainWindow shown: IsVisible={desktop.MainWindow.IsVisible}, WindowState={desktop.MainWindow.WindowState}, Position={desktop.MainWindow.Position}");
         }
 
         base.OnFrameworkInitializationCompleted();

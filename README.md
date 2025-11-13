@@ -15,6 +15,7 @@
 - Настраиваемая длительность показа предупреждений
 - Конфигурация через JSON-файл
 - Кросс-платформенность (Windows, macOS, Linux)
+- **Режим тестирования с генератором фейковых событий** - для удобного тестирования без реальных лог-файлов
 
 ## Требования
 
@@ -90,8 +91,11 @@ dotnet publish -c Release -r linux-x64 --self-contained -o publish/linux-x64
 - `DisplayDurationSeconds` - длительность показа предупреждения в секундах (по умолчанию: 10)
 - `DisplayAreaWidth` - ширина области трансляции в пикселях (по умолчанию: 576)
 - `DisplayAreaHeight` - высота области трансляции в пикселях (по умолчанию: 192)
+- `UseFakeEvents` - использовать генератор фейковых событий вместо реальных файлов (по умолчанию: `false`)
 
 ### Пример конфигурации
+
+#### Режим работы с реальными файлами (по умолчанию)
 
 ```json
 {
@@ -99,9 +103,25 @@ dotnet publish -c Release -r linux-x64 --self-contained -o publish/linux-x64
   "LogFile2Path": ".examples/camealogSOCK2.log",
   "DisplayDurationSeconds": 10,
   "DisplayAreaWidth": 576,
-  "DisplayAreaHeight": 192
+  "DisplayAreaHeight": 192,
+  "UseFakeEvents": false
 }
 ```
+
+#### Режим тестирования с генератором фейковых событий
+
+```json
+{
+  "LogFile1Path": ".examples/camealogSOCK1.log",
+  "LogFile2Path": ".examples/camealogSOCK2.log",
+  "DisplayDurationSeconds": 10,
+  "DisplayAreaWidth": 576,
+  "DisplayAreaHeight": 192,
+  "UseFakeEvents": true
+}
+```
+
+**Примечание:** В режиме тестирования (`UseFakeEvents: true`) приложение генерирует случайные нарушения каждые 1-5 секунд, игнорируя реальные лог-файлы. Это удобно для тестирования интерфейса без необходимости наличия реальных данных.
 
 **Примечание:** Можно использовать как абсолютные, так и относительные пути. Относительные пути разрешаются относительно расположения файла `appsettings.json`.
 
@@ -135,7 +155,8 @@ DD/MM/YYYY-HH:mm:ss --- SOCK1---overload: True, overloadAxels: False, number: А
 camera-watch/
 ├── CameraWatch/
 │   ├── Models/              # Модели данных (AppConfig, LogEntry, Violation)
-│   ├── Services/            # Сервисы (ConfigService, LogParserService, FileWatcherService)
+│   ├── Services/            # Сервисы (ConfigService, LogParserService, FileWatcherService, FakeEventGeneratorService)
+│   │                         # IViolationEventSource - интерфейс источника событий
 │   ├── ViewModels/          # ViewModels для MVVM (MainWindowViewModel, ViewModelBase)
 │   ├── Views/               # Представления (MainWindow.axaml)
 │   ├── App.axaml            # Определение приложения
@@ -178,6 +199,9 @@ camera-watch/
 - **CommunityToolkit.Mvvm** - для реализации ViewModel с атрибутами
 - **System.Text.Json** - для работы с конфигурацией
 - **FileSystemWatcher** - для мониторинга файлов
+- **IViolationEventSource** - интерфейс для абстракции источника событий:
+  - `FileWatcherService` - реальное чтение из лог-файлов
+  - `FakeEventGeneratorService` - генератор фейковых событий для тестирования
 
 ### Запуск в режиме разработки
 

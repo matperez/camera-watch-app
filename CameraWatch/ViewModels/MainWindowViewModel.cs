@@ -8,7 +8,7 @@ namespace CameraWatch.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    private readonly FileWatcherService _fileWatcher;
+    private readonly IViolationEventSource _eventSource;
     private readonly LogParserService _parser;
     private readonly DispatcherTimer _hideTimer1;
     private readonly DispatcherTimer _hideTimer2;
@@ -26,9 +26,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _lane2Visible = true;
 
-    public MainWindowViewModel(FileWatcherService fileWatcher, LogParserService parser, int displayDurationSeconds)
+    public MainWindowViewModel(IViolationEventSource eventSource, LogParserService parser, int displayDurationSeconds)
     {
-        _fileWatcher = fileWatcher;
+        _eventSource = eventSource;
         _parser = parser;
         _displayDurationSeconds = displayDurationSeconds;
 
@@ -46,28 +46,64 @@ public partial class MainWindowViewModel : ViewModelBase
         _hideTimer2.Tick += (s, e) => HideLane2();
 
         // Подписываемся на события нарушений
-        _fileWatcher.ViolationDetected += OnViolationDetected;
+        _eventSource.ViolationDetected += OnViolationDetected;
+        LogMessage("MainWindowViewModel: Подписка на события ViolationDetected выполнена");
+        
+        // Проверяем, что подписка работает - вызываем тестовое событие напрямую
+        if (_eventSource is FakeEventGeneratorService fakeService)
+        {
+            LogMessage("MainWindowViewModel: Обнаружен FakeEventGeneratorService, проверяем подписку...");
+        }
     }
 
     private void OnViolationDetected(Violation violation)
     {
-        var violationText = _parser.GetViolationTypeText(violation.Type);
-        var displayText = $"Нарушение!\n{violation.LicensePlate}\n{violationText}";
+        LogMessage($"MainWindowViewModel: Получено нарушение - Полоса {violation.Lane}, Номер: {violation.LicensePlate}, Тип: {violation.Type}");
+        
+        // Убеждаемся, что обновления UI происходят в UI потоке
+        Dispatcher.UIThread.Post(() =>
+        {
+            try
+            {
+                var violationText = _parser.GetViolationTypeText(violation.Type);
+                var displayText = $"Нарушение!\n{violation.LicensePlate}\n{violationText}";
+                
+                LogMessage($"MainWindowViewModel: Обновление UI - Полоса {violation.Lane}, Текст: {displayText}");
 
-        if (violation.Lane == 1)
+                if (violation.Lane == 1)
+                {
+                    Lane1Text = displayText;
+                    Lane1Visible = true;
+                    _hideTimer1.Stop();
+                    _hideTimer1.Start();
+                    LogMessage("MainWindowViewModel: Обновлена полоса 1");
+                }
+                else if (violation.Lane == 2)
+                {
+                    Lane2Text = displayText;
+                    Lane2Visible = true;
+                    _hideTimer2.Stop();
+                    _hideTimer2.Start();
+                    LogMessage("MainWindowViewModel: Обновлена полоса 2");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"MainWindowViewModel: Ошибка обновления UI: {ex.Message}");
+            }
+        });
+    }
+    
+    private void LogMessage(string message)
+    {
+        try
         {
-            Lane1Text = displayText;
-            Lane1Visible = true;
-            _hideTimer1.Stop();
-            _hideTimer1.Start();
+            System.Console.WriteLine(message);
+            System.Diagnostics.Debug.WriteLine(message);
+            var logPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "camera-watch-debug.log");
+            System.IO.File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}\n");
         }
-        else if (violation.Lane == 2)
-        {
-            Lane2Text = displayText;
-            Lane2Visible = true;
-            _hideTimer2.Stop();
-            _hideTimer2.Start();
-        }
+        catch { }
     }
 
     private void HideLane1()
